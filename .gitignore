@@ -1,0 +1,11 @@
+# Environment files
+.env
+
+# IntelliJ
+.idea/
+
+# Maven
+target/
+
+# OS files
+.DS_Store
