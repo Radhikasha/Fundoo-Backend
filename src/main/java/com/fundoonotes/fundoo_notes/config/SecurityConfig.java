@@ -84,11 +84,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Allow React & Angular frontends
-        config.setAllowedOrigins(List.of(
-
-                "http://localhost:4200"
-        ));
+        // Allow origins (Localhost & Cloud Frontends like Vercel/Netlify)
+        config.setAllowedOriginPatterns(List.of("*"));
 
         // Allow all headers like contecnt types, authorization bearer
         config.setAllowedHeaders(List.of("*"));

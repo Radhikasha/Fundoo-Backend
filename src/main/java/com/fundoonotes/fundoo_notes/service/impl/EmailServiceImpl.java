@@ -20,22 +20,77 @@ public class EmailServiceImpl implements EmailService {
     public void sendVerificationEmail(String toEmail, String token) {
         String link = "http://localhost:8080" +
                 "/api/users/verify?token=" + token;
-        sendEmail(toEmail,
-                "Verify Your Fundoo Notes Account",
-                "Hello,\n\nClick to verify your account:\n\n"
-                        + link + "\n\nThis link expires in 24 hours.\n\n"
-                        + "Regards,\nFundoo Notes Team");
+
+        String htmlContent = "<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);\">"
+                + "  <div style=\"padding: 30px; text-align: center; background-color: #ffffff;\">"
+                + "    <table align=\"center\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 0 auto 20px auto; width: 60px; height: 60px;\">"
+                + "      <tr>"
+                + "        <td align=\"center\" valign=\"middle\" style=\"width: 60px; height: 60px; background-color: #fbbc04; border-radius: 50%; text-align: center; vertical-align: middle; font-size: 26px; line-height: 60px; margin: 0; padding: 0;\">✉️</td>"
+                + "      </tr>"
+                + "    </table>"
+                + "    <h2 style=\"font-size: 20px; color: #202124; margin-bottom: 15px;\">Verify Your Account</h2>"
+                + "    <p style=\"font-size: 15px; color: #5f6368; margin-bottom: 25px;\">Thank you for signing up! Please click the button below to verify your Fundoo Notes account. This link will expire in 24 hours.</p>"
+                + "    <a href=\"" + link + "\" style=\"display: inline-block; background-color: #fbbc04; color: #202124; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 32px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);\">Verify Account</a>"
+                + "  </div>"
+                + "  <div style=\"background-color: #fef7e0; padding: 12px 20px; text-align: center; border-top: 1px solid #f1f3f4; font-size: 13px; color: #5f6368;\">"
+                + "    <strong>Fundoo Notes</strong> &nbsp; Save your thoughts, wherever you are."
+                + "  </div>"
+                + "</div>";
+
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("Verify Your Fundoo Notes Account");
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            sendEmail(toEmail,
+                    "Verify Your Fundoo Notes Account",
+                    "Hello,\n\nClick to verify your account:\n\n"
+                            + link + "\n\nThis link expires in 24 hours.\n\n"
+                            + "Regards,\nFundoo Notes Team");
+        }
     }
 
     @Override
     public void sendPasswordResetEmail(String toEmail, String token) {
         String link = "http://localhost:4200" +
                 "/reset-password?token=" + token;
-        sendEmail(toEmail,
-                "Reset Your Fundoo Notes Password",
-                "Hello,\n\nClick to reset your password:\n\n"
-                        + link + "\n\nThis link expires in 24 hours.\n\n"
-                        + "Regards,\nFundoo Notes Team");
+
+        String htmlContent = "<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);\">"
+                + "  <div style=\"padding: 30px; text-align: center; background-color: #ffffff;\">"
+                + "    <table align=\"center\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 0 auto 20px auto; width: 60px; height: 60px;\">"
+                + "      <tr>"
+                + "        <td align=\"center\" valign=\"middle\" style=\"width: 60px; height: 60px; background-color: #fbbc04; border-radius: 50%; text-align: center; vertical-align: middle; font-size: 26px; line-height: 60px; margin: 0; padding: 0;\">🔑</td>"
+                + "      </tr>"
+                + "    </table>"
+                + "    <h2 style=\"font-size: 20px; color: #202124; margin-bottom: 15px;\">Reset Your Password</h2>"
+                + "    <p style=\"font-size: 15px; color: #5f6368; margin-bottom: 25px;\">Click the button below to reset your Fundoo Notes password. This link will expire in 24 hours.</p>"
+                + "    <a href=\"" + link + "\" style=\"display: inline-block; background-color: #fbbc04; color: #202124; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 32px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);\">Reset Password</a>"
+                + "    <p style=\"font-size: 13px; color: #70757a; margin-top: 25px; margin-bottom: 0;\">If you did not request a password reset, please ignore this email.</p>"
+                + "  </div>"
+                + "  <div style=\"background-color: #fef7e0; padding: 12px 20px; text-align: center; border-top: 1px solid #f1f3f4; font-size: 13px; color: #5f6368;\">"
+                + "    <strong>Fundoo Notes</strong> &nbsp; Save your thoughts, wherever you are."
+                + "  </div>"
+                + "</div>";
+
+        try {
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("Reset Your Fundoo Notes Password");
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+        } catch (Exception e) {
+            sendEmail(toEmail,
+                    "Reset Your Fundoo Notes Password",
+                    "Hello,\n\nClick to reset your password:\n\n"
+                            + link + "\n\nThis link expires in 24 hours.\n\n"
+                            + "Regards,\nFundoo Notes Team");
+        }
     }
 
     @Override
