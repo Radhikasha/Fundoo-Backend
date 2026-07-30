@@ -40,8 +40,17 @@ public class RabbitMQConfig {
     @Bean
     public ConnectionFactory connectionFactory() {
         CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+
+        int targetPort = port;
+        boolean useSsl = sslEnabled;
+
+        if (host != null && host.contains("cloudamqp.com")) {
+            targetPort = 5671;
+            useSsl = true;
+        }
+
         connectionFactory.setHost(host);
-        connectionFactory.setPort(port);
+        connectionFactory.setPort(targetPort);
         connectionFactory.setUsername(username);
         connectionFactory.setPassword(password);
 
@@ -50,7 +59,7 @@ public class RabbitMQConfig {
                 ? username : virtualHost;
         connectionFactory.setVirtualHost(vhost);
 
-        if (sslEnabled) {
+        if (useSsl) {
             try {
                 connectionFactory.getRabbitConnectionFactory().useSslProtocol();
             } catch (Exception e) {
