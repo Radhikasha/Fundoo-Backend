@@ -38,6 +38,24 @@ public class EmailServiceImpl implements EmailService {
     @Value("${app.backend-url:http://localhost:8086}")
     private String backendUrl;
 
+    private String getCleanFrontendUrl() {
+        if (frontendUrl == null || frontendUrl.isBlank()) return "http://localhost:5173";
+        String url = frontendUrl.trim();
+        while (url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+        return url;
+    }
+
+    private String getCleanBackendUrl() {
+        if (backendUrl == null || backendUrl.isBlank()) return "http://localhost:8086";
+        String url = backendUrl.trim();
+        while (url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+        return url;
+    }
+
     /**
      * Sends email via Brevo's HTTPS REST API (Port 443).
      * This bypasses Render Free Tier's outbound SMTP port blocking (ports 25/465/587).
@@ -86,7 +104,7 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     public void sendVerificationEmail(String toEmail, String token) {
-        String link = backendUrl + "/api/users/verify?token=" + token;
+        String link = getCleanBackendUrl() + "/api/users/verify?token=" + token;
 
         String htmlContent = "<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);\">"
                 + "  <div style=\"padding: 30px; text-align: center; background-color: #ffffff;\">"
@@ -114,7 +132,7 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     public void sendPasswordResetEmail(String toEmail, String token) {
-        String link = frontendUrl + "/reset-password?token=" + token;
+        String link = getCleanFrontendUrl() + "/reset-password?token=" + token;
 
         String htmlContent = "<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);\">"
                 + "  <div style=\"padding: 30px; text-align: center; background-color: #ffffff;\">"
@@ -150,7 +168,7 @@ public class EmailServiceImpl implements EmailService {
     public void sendReminderEmail(String toEmail, String noteTitle, String noteContent) {
         String title = (noteTitle != null && !noteTitle.trim().isEmpty()) ? noteTitle : "Untitled Note";
         String contentText = (noteContent != null && !noteContent.trim().isEmpty()) ? noteContent : "";
-        String dashboardUrl = frontendUrl + "/dashboard";
+        String dashboardUrl = getCleanFrontendUrl() + "/dashboard";
 
         String htmlContent = "<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);\">"
                 + "  <div style=\"padding: 30px; text-align: center; background-color: #ffffff;\">"
@@ -181,7 +199,7 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     public void sendCollaborationEmail(String toEmail, String ownerEmail, String noteTitle, Long noteId) {
-        String dashboardUrl = frontendUrl + "/dashboard?noteId=" + (noteId != null ? noteId : "");
+        String dashboardUrl = getCleanFrontendUrl() + "/dashboard?noteId=" + (noteId != null ? noteId : "");
         String title = (noteTitle != null && !noteTitle.trim().isEmpty()) ? noteTitle : "Untitled Note";
 
         String htmlContent = "<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);\">"
