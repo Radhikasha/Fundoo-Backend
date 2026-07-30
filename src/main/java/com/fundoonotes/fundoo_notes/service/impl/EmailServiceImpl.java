@@ -1,6 +1,8 @@
 package com.fundoonotes.fundoo_notes.service.impl;
 
 import com.fundoonotes.fundoo_notes.service.EmailService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -10,16 +12,23 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailServiceImpl implements EmailService {
 
+    private static final Logger log = LoggerFactory.getLogger(EmailServiceImpl.class);
+
     @Autowired
     private JavaMailSender mailSender;
 
     @Value("${spring.mail.username}")
     private String fromEmail;
 
+    @Value("${app.frontend-url:http://localhost:5173}")
+    private String frontendUrl;
+
+    @Value("${app.backend-url:http://localhost:8086}")
+    private String backendUrl;
+
     @Override
     public void sendVerificationEmail(String toEmail, String token) {
-        String link = "http://localhost:8080" +
-                "/api/users/verify?token=" + token;
+        String link = backendUrl + "/api/users/verify?token=" + token;
 
         String htmlContent = "<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);\">"
                 + "  <div style=\"padding: 30px; text-align: center; background-color: #ffffff;\">"
@@ -45,19 +54,24 @@ public class EmailServiceImpl implements EmailService {
             helper.setSubject("Verify Your Fundoo Notes Account");
             helper.setText(htmlContent, true);
             mailSender.send(mimeMessage);
+            log.info("Verification email sent to {}", toEmail);
         } catch (Exception e) {
-            sendEmail(toEmail,
-                    "Verify Your Fundoo Notes Account",
-                    "Hello,\n\nClick to verify your account:\n\n"
-                            + link + "\n\nThis link expires in 24 hours.\n\n"
-                            + "Regards,\nFundoo Notes Team");
+            log.warn("Failed to send HTML verification email to {}: {}. Retrying with plain text.", toEmail, e.getMessage());
+            try {
+                sendEmail(toEmail,
+                        "Verify Your Fundoo Notes Account",
+                        "Hello,\n\nClick to verify your account:\n\n"
+                                + link + "\n\nThis link expires in 24 hours.\n\n"
+                                + "Regards,\nFundoo Notes Team");
+            } catch (Exception ex) {
+                log.error("Failed to send verification email to {}: {}", toEmail, ex.getMessage(), ex);
+            }
         }
     }
 
     @Override
     public void sendPasswordResetEmail(String toEmail, String token) {
-        String link = "http://localhost:4200" +
-                "/reset-password?token=" + token;
+        String link = frontendUrl + "/reset-password?token=" + token;
 
         String htmlContent = "<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);\">"
                 + "  <div style=\"padding: 30px; text-align: center; background-color: #ffffff;\">"
@@ -84,12 +98,18 @@ public class EmailServiceImpl implements EmailService {
             helper.setSubject("Reset Your Fundoo Notes Password");
             helper.setText(htmlContent, true);
             mailSender.send(mimeMessage);
+            log.info("Password reset email sent to {}", toEmail);
         } catch (Exception e) {
-            sendEmail(toEmail,
-                    "Reset Your Fundoo Notes Password",
-                    "Hello,\n\nClick to reset your password:\n\n"
-                            + link + "\n\nThis link expires in 24 hours.\n\n"
-                            + "Regards,\nFundoo Notes Team");
+            log.warn("Failed to send HTML password reset email to {}: {}. Retrying with plain text.", toEmail, e.getMessage());
+            try {
+                sendEmail(toEmail,
+                        "Reset Your Fundoo Notes Password",
+                        "Hello,\n\nClick to reset your password:\n\n"
+                                + link + "\n\nThis link expires in 24 hours.\n\n"
+                                + "Regards,\nFundoo Notes Team");
+            } catch (Exception ex) {
+                log.error("Failed to send password reset email to {}: {}", toEmail, ex.getMessage(), ex);
+            }
         }
     }
 
@@ -102,7 +122,7 @@ public class EmailServiceImpl implements EmailService {
     public void sendReminderEmail(String toEmail, String noteTitle, String noteContent) {
         String title = (noteTitle != null && !noteTitle.trim().isEmpty()) ? noteTitle : "Untitled Note";
         String contentText = (noteContent != null && !noteContent.trim().isEmpty()) ? noteContent : "";
-        String dashboardUrl = "http://localhost:4200/dashboard";
+        String dashboardUrl = frontendUrl + "/dashboard";
 
         String htmlContent = "<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);\">"
                 + "  <div style=\"padding: 30px; text-align: center; background-color: #ffffff;\">"
@@ -129,18 +149,24 @@ public class EmailServiceImpl implements EmailService {
             helper.setSubject("Reminder: " + title);
             helper.setText(htmlContent, true);
             mailSender.send(mimeMessage);
+            log.info("Reminder email sent to {}", toEmail);
         } catch (Exception e) {
-            sendEmail(toEmail,
-                    "Reminder: " + title,
-                    "Hello,\n\nThis is a reminder for your note:\n\n\"" + title + "\"\n"
-                            + (contentText.isEmpty() ? "" : "\nContent:\n" + contentText + "\n")
-                            + "\nPlease check your Fundoo Notes.\n\nRegards,\nFundoo Notes Team");
+            log.warn("Failed to send HTML reminder email to {}: {}. Retrying with plain text.", toEmail, e.getMessage());
+            try {
+                sendEmail(toEmail,
+                        "Reminder: " + title,
+                        "Hello,\n\nThis is a reminder for your note:\n\n\"" + title + "\"\n"
+                                + (contentText.isEmpty() ? "" : "\nContent:\n" + contentText + "\n")
+                                + "\nPlease check your Fundoo Notes.\n\nRegards,\nFundoo Notes Team");
+            } catch (Exception ex) {
+                log.error("Failed to send reminder email to {}: {}", toEmail, ex.getMessage(), ex);
+            }
         }
     }
 
     @Override
     public void sendCollaborationEmail(String toEmail, String ownerEmail, String noteTitle, Long noteId) {
-        String dashboardUrl = "http://localhost:4200/dashboard?noteId=" + (noteId != null ? noteId : "");
+        String dashboardUrl = frontendUrl + "/dashboard?noteId=" + (noteId != null ? noteId : "");
         String title = (noteTitle != null && !noteTitle.trim().isEmpty()) ? noteTitle : "Untitled Note";
 
         String htmlContent = "<div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);\">"
@@ -167,11 +193,16 @@ public class EmailServiceImpl implements EmailService {
             helper.setSubject("Note shared with you - Fundoo Notes");
             helper.setText(htmlContent, true);
             mailSender.send(mimeMessage);
+            log.info("Collaboration email sent to {}", toEmail);
         } catch (Exception e) {
-            // Fallback to simple mail message if MimeMessage fails
-            sendEmail(toEmail,
-                    "Note shared with you - Fundoo Notes",
-                    ownerEmail + " shared a note with you: \"" + title + "\"\n\nOpen note here:\n" + dashboardUrl);
+            log.warn("Failed to send HTML collaboration email to {}: {}. Retrying with plain text.", toEmail, e.getMessage());
+            try {
+                sendEmail(toEmail,
+                        "Note shared with you - Fundoo Notes",
+                        ownerEmail + " shared a note with you: \"" + title + "\"\n\nOpen note here:\n" + dashboardUrl);
+            } catch (Exception ex) {
+                log.error("Failed to send collaboration email to {}: {}", toEmail, ex.getMessage(), ex);
+            }
         }
     }
 

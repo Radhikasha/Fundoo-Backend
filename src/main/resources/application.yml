@@ -41,17 +41,17 @@ spring:
   # ---------- RABBITMQ ----------
   rabbitmq:
     host: ${RABBITMQ_HOST}
-    port: ${RABBITMQ_PORT:5672}
+    port: ${RABBITMQ_PORT:5671}
     username: ${RABBITMQ_USERNAME}
     password: ${RABBITMQ_PASSWORD}
     virtual-host: ${RABBITMQ_VIRTUAL_HOST:/}
     ssl:
-      enabled: ${RABBITMQ_SSL_ENABLED:false}
+      enabled: ${RABBITMQ_SSL_ENABLED:true}
 
   # ---------- MAIL (for OTP emails) ----------
   mail:
-    host: ${MAIL_HOST}
-    port: ${MAIL_PORT}
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
     properties:
@@ -60,6 +60,12 @@ spring:
           auth: true
           starttls:
             enable: true
+            required: true
+          ssl:
+            trust: smtp.gmail.com
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
   # ---------- GOOGLE OAUTH2 ----------
   security:
@@ -80,6 +86,8 @@ jwt:
 
 # ---------- APP-SPECIFIC ----------
 app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  backend-url: ${BACKEND_URL:http://localhost:8086}
   oauth2:
     redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:5173/oauth/callback}
 
