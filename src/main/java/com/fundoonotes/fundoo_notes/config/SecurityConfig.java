@@ -84,13 +84,13 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Allow origins (Localhost & Cloud Frontends like Vercel/Netlify)
-        config.setAllowedOriginPatterns(List.of("*"));
+        // Allow origins dynamically (Localhost, Vercel, Render, etc.)
+        config.addAllowedOriginPattern("*");
 
-        // Allow all headers like contecnt types, authorization bearer
+        // Allow all headers like content types, authorization bearer
         config.setAllowedHeaders(List.of("*"));
 
-        // Expose Authorization header i.e bearer dbdjhbjdnscndb
+        // Expose Authorization header i.e bearer token
         config.setExposedHeaders(List.of("Authorization"));
 
         // Allow these HTTP methods
@@ -102,7 +102,7 @@ public class SecurityConfig {
         config.setAllowCredentials(true); // allow cookies, session ids
 
         UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();  // This creates an object that stores CORS configurations for different URL patterns
+                new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }
