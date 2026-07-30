@@ -46,9 +46,14 @@ spring:
     virtual-host: ${RABBITMQ_VIRTUAL_HOST:hmgrgaan}
     ssl:
       enabled: ${RABBITMQ_SSL_ENABLED:true}
-    # KEY FIX: heartbeat keeps CloudAMQP idle connection alive (free tier closes after 60s)
     requested-heartbeat: 30
     connection-timeout: 60000
+    listener:
+      simple:
+        # Render Free Tier blocks outbound TCP on port 5671 (AMQPS).
+        # Disabling the listener prevents the "Network is unreachable" error loop.
+        # Reminders are sent directly via email (ReminderScheduler has fallback).
+        auto-startup: false
 
   # ---------- MAIL (Brevo SMTP relay) ----------
   mail:
