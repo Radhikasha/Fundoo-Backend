@@ -93,6 +93,10 @@ jwt:
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
   backend-url: ${BACKEND_URL:http://localhost:8086}
+  mail:
+    # FROM address shown in the email. Must be a verified sender in Brevo.
+    # Set MAIL_FROM on Render to your verified sender email (e.g. radhikasharma790670@gmail.com)
+    from: ${MAIL_FROM:${MAIL_USERNAME:b3cabb001@smtp-brevo.com}}
   oauth2:
     redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:5173/oauth/callback}
 

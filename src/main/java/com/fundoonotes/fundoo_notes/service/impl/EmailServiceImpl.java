@@ -17,7 +17,7 @@ public class EmailServiceImpl implements EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
-    @Value("${spring.mail.username}")
+    @Value("${app.mail.from:${spring.mail.username}}")
     private String fromEmail;
 
     @Value("${app.frontend-url:http://localhost:5173}")
@@ -56,7 +56,7 @@ public class EmailServiceImpl implements EmailService {
             mailSender.send(mimeMessage);
             log.info("Verification email sent to {}", toEmail);
         } catch (Exception e) {
-            log.warn("Failed to send HTML verification email to {}: {}. Retrying with plain text.", toEmail, e.getMessage());
+            log.error("[MAIL ERROR] HTML verification email failed to {}. FROM={} Cause: {}", toEmail, fromEmail, e.getMessage(), e);
             try {
                 sendEmail(toEmail,
                         "Verify Your Fundoo Notes Account",
@@ -64,7 +64,7 @@ public class EmailServiceImpl implements EmailService {
                                 + link + "\n\nThis link expires in 24 hours.\n\n"
                                 + "Regards,\nFundoo Notes Team");
             } catch (Exception ex) {
-                log.error("Failed to send verification email to {}: {}", toEmail, ex.getMessage(), ex);
+                log.error("[MAIL ERROR] Plain-text verification email also failed to {}: {}", toEmail, ex.getMessage(), ex);
             }
         }
     }
@@ -100,7 +100,7 @@ public class EmailServiceImpl implements EmailService {
             mailSender.send(mimeMessage);
             log.info("Password reset email sent to {}", toEmail);
         } catch (Exception e) {
-            log.warn("Failed to send HTML password reset email to {}: {}. Retrying with plain text.", toEmail, e.getMessage());
+            log.error("[MAIL ERROR] HTML password reset email failed to {}. FROM={} Cause: {}", toEmail, fromEmail, e.getMessage(), e);
             try {
                 sendEmail(toEmail,
                         "Reset Your Fundoo Notes Password",
@@ -108,7 +108,7 @@ public class EmailServiceImpl implements EmailService {
                                 + link + "\n\nThis link expires in 24 hours.\n\n"
                                 + "Regards,\nFundoo Notes Team");
             } catch (Exception ex) {
-                log.error("Failed to send password reset email to {}: {}", toEmail, ex.getMessage(), ex);
+                log.error("[MAIL ERROR] Plain-text password reset email also failed to {}: {}", toEmail, ex.getMessage(), ex);
             }
         }
     }
