@@ -71,10 +71,6 @@ public class RabbitMQConfig {
         // Heartbeat: keeps CloudAMQP from closing idle connections (free tier disconnects after ~60s)
         factory.getRabbitConnectionFactory().setRequestedHeartbeat(30);
 
-        // CHANNEL mode: single TCP connection, multiple channels
-        // Required for CloudAMQP free tier (only 1 concurrent connection allowed)
-        factory.setCacheMode(CachingConnectionFactory.CachingMode.CHANNEL);
-
         return factory;
     }
 
