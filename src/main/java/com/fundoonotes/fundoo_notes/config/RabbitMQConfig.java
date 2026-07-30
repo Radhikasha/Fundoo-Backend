@@ -38,69 +38,76 @@ public class RabbitMQConfig {
     @Value("${spring.rabbitmq.ssl.enabled:true}")
     private boolean sslEnabled;
 
+    /**
+     * Custom ConnectionFactory so we can enforce:
+     * - SSL (port 5671) for CloudAMQP
+     * - Correct virtual host (hmgrgaan, not '/')
+     * - CHANNEL caching mode (one TCP connection, many channels — required on CloudAMQP free tier)
+     *
+     * Heartbeat (30s) and connection-timeout are configured via application.yml
+     * spring.rabbitmq.requested-heartbeat and spring.rabbitmq.connection-timeout
+     * and are applied automatically by Spring Boot's RabbitAutoConfiguration to the
+     * underlying com.rabbitmq.client.ConnectionFactory before we wrap it.
+     */
     @Bean
     public ConnectionFactory connectionFactory() {
-        com.rabbitmq.client.ConnectionFactory rabbitFactory =
-                new com.rabbitmq.client.ConnectionFactory();
+        CachingConnectionFactory factory = new CachingConnectionFactory();
 
         int targetPort = port;
         boolean useSsl = sslEnabled;
 
-        // Force SSL port for CloudAMQP regardless of environment variable
+        // Always use SSL port 5671 for CloudAMQP
         if (host != null && host.contains("cloudamqp.com")) {
             targetPort = 5671;
             useSsl = true;
         }
 
-        rabbitFactory.setHost(host);
-        rabbitFactory.setPort(targetPort);
-        rabbitFactory.setUsername(username);
-        rabbitFactory.setPassword(password);
+        factory.setHost(host);
+        factory.setPort(targetPort);
+        factory.setUsername(username);
+        factory.setPassword(password);
 
-        // CloudAMQP virtual host = username (e.g. hmgrgaan), not '/'
+        // CloudAMQP free tier: virtual host must equal the username (e.g. hmgrgaan)
         String vhost = (virtualHost == null || virtualHost.isBlank() || "/".equals(virtualHost))
                 ? username : virtualHost;
-        rabbitFactory.setVirtualHost(vhost);
-
-        // KEY FIX: Heartbeat keeps CloudAMQP connection alive.
-        // CloudAMQP free tier closes idle connections after ~60s.
-        // Heartbeat of 30s sends a keep-alive ping every 30 seconds.
-        rabbitFactory.setRequestedHeartbeat(30);
-
-        // Connection timeout and auto-recovery
-        rabbitFactory.setConnectionTimeout(60000);
-        rabbitFactory.setAutomaticRecoveryEnabled(true);
-        rabbitFactory.setNetworkRecoveryInterval(10000); // retry every 10s on drop
+        factory.setVirtualHost(vhost);
 
         if (useSsl) {
             try {
-                rabbitFactory.useSslProtocol();
+                factory.getRabbitConnectionFactory().useSslProtocol();
             } catch (Exception e) {
-                System.err.println("RabbitMQ SSL protocol setup failed: " + e.getMessage());
+                System.err.println("RabbitMQ SSL setup failed: " + e.getMessage());
             }
         }
 
-        CachingConnectionFactory cachingFactory = new CachingConnectionFactory(rabbitFactory);
-        // CHANNEL mode: single TCP connection, multiple channels — correct for CloudAMQP free tier
-        cachingFactory.setCacheMode(CachingConnectionFactory.CachingMode.CHANNEL);
+        // Set heartbeat directly on the underlying AMQP ConnectionFactory
+        // Keeps CloudAMQP from closing idle connections (free tier disconnects after ~60s)
+        factory.getRabbitConnectionFactory().setRequestedHeartbeat(30);
 
-        return cachingFactory;
+        // CHANNEL mode: single TCP connection shared across all threads
+        // Critical for CloudAMQP free tier which only allows 1 concurrent connection
+        factory.setCacheMode(CachingConnectionFactory.CachingMode.CHANNEL);
+
+        return factory;
     }
 
+    /**
+     * Listener container factory — uses the shared connection above
+     * and retries every 10 seconds if the connection temporarily drops.
+     */
     @Bean
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
             ConnectionFactory connectionFactory) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(messageConverter());
-        // Recover gracefully if connection drops — retry after 10 seconds
         factory.setRecoveryInterval(10000L);
         return factory;
     }
 
     @Bean
     public Queue reminderQueue() {
-        return new Queue(REMINDER_QUEUE, true); // durable=true, auto-delete=false
+        return new Queue(REMINDER_QUEUE, true); // durable, not auto-delete
     }
 
     @Bean

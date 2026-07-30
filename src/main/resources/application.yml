@@ -1,0 +1,100 @@
+server:
+  port: ${SERVER_PORT:8086}
+
+spring:
+  application:
+    name: fundoonotes
+
+  # ---------- POSTGRESQL ----------
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  # ---------- JACKSON ----------
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+  # ---------- REDIS ----------
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD:}
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:false}
+
+  # ---------- RABBITMQ ----------
+  rabbitmq:
+    host: ${RABBITMQ_HOST:warthog.lmq.cloudamqp.com}
+    port: ${RABBITMQ_PORT:5671}
+    username: ${RABBITMQ_USERNAME:hmgrgaan}
+    password: ${RABBITMQ_PASSWORD:ZysPvVKs_aZm4lsp3fm5WifgOMP8FEow}
+    virtual-host: ${RABBITMQ_VIRTUAL_HOST:hmgrgaan}
+    ssl:
+      enabled: ${RABBITMQ_SSL_ENABLED:true}
+    # KEY FIX: heartbeat keeps CloudAMQP idle connection alive (free tier closes after 60s)
+    requested-heartbeat: 30
+    connection-timeout: 60000
+
+  # ---------- MAIL (Brevo SMTP relay) ----------
+  mail:
+    host: ${MAIL_HOST:smtp-relay.brevo.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
+
+  # ---------- GOOGLE OAUTH2 ----------
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+
+# ---------- JWT ----------
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:86400000}
+
+# ---------- APP-SPECIFIC ----------
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  backend-url: ${BACKEND_URL:http://localhost:8086}
+  oauth2:
+    redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:5173/oauth/callback}
+
+# ---------- SWAGGER / OPENAPI ----------
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
