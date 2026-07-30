@@ -48,12 +48,12 @@ spring:
     ssl:
       enabled: ${RABBITMQ_SSL_ENABLED:true}
 
-  # ---------- MAIL (for OTP emails) ----------
+  # ---------- MAIL (Brevo SMTP relay) ----------
   mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
+    host: ${MAIL_HOST:smtp-relay.brevo.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:radhikasharma790670@gmail.com}
-    password: ${MAIL_PASSWORD:nexjdaaeekdijqet}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -61,8 +61,6 @@ spring:
           starttls:
             enable: true
             required: true
-          ssl:
-            trust: "*"
           connectiontimeout: 10000
           timeout: 10000
           writetimeout: 10000
