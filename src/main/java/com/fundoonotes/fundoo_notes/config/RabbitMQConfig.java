@@ -4,7 +4,6 @@ import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -38,17 +37,6 @@ public class RabbitMQConfig {
     @Value("${spring.rabbitmq.ssl.enabled:true}")
     private boolean sslEnabled;
 
-    /**
-     * Custom ConnectionFactory so we can enforce:
-     * - SSL (port 5671) for CloudAMQP
-     * - Correct virtual host (hmgrgaan, not '/')
-     * - CHANNEL caching mode (one TCP connection, many channels — required on CloudAMQP free tier)
-     *
-     * Heartbeat (30s) and connection-timeout are configured via application.yml
-     * spring.rabbitmq.requested-heartbeat and spring.rabbitmq.connection-timeout
-     * and are applied automatically by Spring Boot's RabbitAutoConfiguration to the
-     * underlying com.rabbitmq.client.ConnectionFactory before we wrap it.
-     */
     @Bean
     public ConnectionFactory connectionFactory() {
         CachingConnectionFactory factory = new CachingConnectionFactory();
@@ -80,34 +68,19 @@ public class RabbitMQConfig {
             }
         }
 
-        // Set heartbeat directly on the underlying AMQP ConnectionFactory
-        // Keeps CloudAMQP from closing idle connections (free tier disconnects after ~60s)
+        // Heartbeat: keeps CloudAMQP from closing idle connections (free tier disconnects after ~60s)
         factory.getRabbitConnectionFactory().setRequestedHeartbeat(30);
 
-        // CHANNEL mode: single TCP connection shared across all threads
-        // Critical for CloudAMQP free tier which only allows 1 concurrent connection
+        // CHANNEL mode: single TCP connection, multiple channels
+        // Required for CloudAMQP free tier (only 1 concurrent connection allowed)
         factory.setCacheMode(CachingConnectionFactory.CachingMode.CHANNEL);
 
         return factory;
     }
 
-    /**
-     * Listener container factory — uses the shared connection above
-     * and retries every 10 seconds if the connection temporarily drops.
-     */
-    @Bean
-    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
-            ConnectionFactory connectionFactory) {
-        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
-        factory.setMessageConverter(messageConverter());
-        factory.setRecoveryInterval(10000L);
-        return factory;
-    }
-
     @Bean
     public Queue reminderQueue() {
-        return new Queue(REMINDER_QUEUE, true); // durable, not auto-delete
+        return new Queue(REMINDER_QUEUE, true); // durable=true, auto-delete=false
     }
 
     @Bean
