@@ -40,11 +40,11 @@ spring:
 
   # ---------- RABBITMQ ----------
   rabbitmq:
-    host: ${RABBITMQ_HOST}
+    host: ${RABBITMQ_HOST:warthog.lmq.cloudamqp.com}
     port: ${RABBITMQ_PORT:5671}
-    username: ${RABBITMQ_USERNAME}
-    password: ${RABBITMQ_PASSWORD}
-    virtual-host: ${RABBITMQ_VIRTUAL_HOST:/}
+    username: ${RABBITMQ_USERNAME:hmgrgaan}
+    password: ${RABBITMQ_PASSWORD:ZysPvVKs_aZm4lsp3fm5WifgOMP8FEow}
+    virtual-host: ${RABBITMQ_VIRTUAL_HOST:hmgrgaan}
     ssl:
       enabled: ${RABBITMQ_SSL_ENABLED:true}
 
@@ -52,8 +52,8 @@ spring:
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${MAIL_USERNAME:radhikasharma790670@gmail.com}
+    password: ${MAIL_PASSWORD:nexjdaaeekdijqet}
     properties:
       mail:
         smtp:
@@ -62,10 +62,10 @@ spring:
             enable: true
             required: true
           ssl:
-            trust: smtp.gmail.com
-          connectiontimeout: 5000
-          timeout: 5000
-          writetimeout: 5000
+            trust: "*"
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
 
   # ---------- GOOGLE OAUTH2 ----------
   security:
