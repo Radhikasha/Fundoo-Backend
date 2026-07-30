@@ -5,26 +5,84 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class EmailServiceImpl implements EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailServiceImpl.class);
 
-    @Autowired
+    @Autowired(required = false)
     private JavaMailSender mailSender;
 
-    @Value("${app.mail.from:${spring.mail.username}}")
+    @Value("${app.mail.from:${spring.mail.username:radhikasharma790670@gmail.com}}")
     private String fromEmail;
+
+    @Value("${app.mail.api-key:${BREVO_API_KEY:${MAIL_PASSWORD:}}}")
+    private String brevoApiKey;
 
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
     @Value("${app.backend-url:http://localhost:8086}")
     private String backendUrl;
+
+    /**
+     * Sends email via Brevo's HTTPS REST API (Port 443).
+     * This bypasses Render Free Tier's outbound SMTP port blocking (ports 25/465/587).
+     */
+    private boolean sendViaBrevoHttpApi(String toEmail, String subject, String htmlContent) {
+        if (brevoApiKey == null || brevoApiKey.isBlank() || brevoApiKey.contains("your-brevo") || brevoApiKey.contains("placeholder")) {
+            log.info("Brevo API key not set or is default placeholder. Skipping HTTP API call.");
+            return false;
+        }
+
+        try {
+            log.info("Attempting to send email to {} via Brevo HTTP REST API (https://api.brevo.com/v3/smtp/email)...", toEmail);
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("api-key", brevoApiKey.trim());
+            headers.set("accept", "application/json");
+
+            Map<String, Object> sender = new HashMap<>();
+            sender.put("name", "Fundoo Notes");
+            sender.put("email", fromEmail != null && !fromEmail.isBlank() ? fromEmail.trim() : "radhikasharma790670@gmail.com");
+
+            Map<String, Object> toItem = new HashMap<>();
+            toItem.put("email", toEmail.trim());
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("sender", sender);
+            body.put("to", Collections.singletonList(toItem));
+            body.put("subject", subject);
+            body.put("htmlContent", htmlContent);
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+            ResponseEntity<String> response = restTemplate.postForEntity("https://api.brevo.com/v3/smtp/email", request, String.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("SUCCESS: Email sent to {} via Brevo HTTP REST API! Response: {}", toEmail, response.getBody());
+                return true;
+            } else {
+                log.warn("Brevo HTTP API returned status {}: {}", response.getStatusCode(), response.getBody());
+            }
+        } catch (Exception e) {
+            log.error("Brevo HTTP REST API failed for {}: {}", toEmail, e.getMessage(), e);
+        }
+        return false;
+    }
 
     @Override
     public void sendVerificationEmail(String toEmail, String token) {
@@ -46,27 +104,12 @@ public class EmailServiceImpl implements EmailService {
                 + "  </div>"
                 + "</div>";
 
-        try {
-            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
-            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
-            helper.setFrom(fromEmail);
-            helper.setTo(toEmail);
-            helper.setSubject("Verify Your Fundoo Notes Account");
-            helper.setText(htmlContent, true);
-            mailSender.send(mimeMessage);
-            log.info("Verification email sent to {}", toEmail);
-        } catch (Exception e) {
-            log.error("[MAIL ERROR] HTML verification email failed to {}. FROM={} Cause: {}", toEmail, fromEmail, e.getMessage(), e);
-            try {
-                sendEmail(toEmail,
-                        "Verify Your Fundoo Notes Account",
-                        "Hello,\n\nClick to verify your account:\n\n"
-                                + link + "\n\nThis link expires in 24 hours.\n\n"
-                                + "Regards,\nFundoo Notes Team");
-            } catch (Exception ex) {
-                log.error("[MAIL ERROR] Plain-text verification email also failed to {}: {}", toEmail, ex.getMessage(), ex);
-            }
+        if (sendViaBrevoHttpApi(toEmail, "Verify Your Fundoo Notes Account", htmlContent)) {
+            return;
         }
+
+        sendSmtpFallback(toEmail, "Verify Your Fundoo Notes Account", htmlContent,
+                "Hello,\n\nClick to verify your account:\n\n" + link + "\n\nThis link expires in 24 hours.\n\nRegards,\nFundoo Notes Team");
     }
 
     @Override
@@ -90,27 +133,12 @@ public class EmailServiceImpl implements EmailService {
                 + "  </div>"
                 + "</div>";
 
-        try {
-            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
-            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
-            helper.setFrom(fromEmail);
-            helper.setTo(toEmail);
-            helper.setSubject("Reset Your Fundoo Notes Password");
-            helper.setText(htmlContent, true);
-            mailSender.send(mimeMessage);
-            log.info("Password reset email sent to {}", toEmail);
-        } catch (Exception e) {
-            log.error("[MAIL ERROR] HTML password reset email failed to {}. FROM={} Cause: {}", toEmail, fromEmail, e.getMessage(), e);
-            try {
-                sendEmail(toEmail,
-                        "Reset Your Fundoo Notes Password",
-                        "Hello,\n\nClick to reset your password:\n\n"
-                                + link + "\n\nThis link expires in 24 hours.\n\n"
-                                + "Regards,\nFundoo Notes Team");
-            } catch (Exception ex) {
-                log.error("[MAIL ERROR] Plain-text password reset email also failed to {}: {}", toEmail, ex.getMessage(), ex);
-            }
+        if (sendViaBrevoHttpApi(toEmail, "Reset Your Fundoo Notes Password", htmlContent)) {
+            return;
         }
+
+        sendSmtpFallback(toEmail, "Reset Your Fundoo Notes Password", htmlContent,
+                "Hello,\n\nClick to reset your password:\n\n" + link + "\n\nThis link expires in 24 hours.\n\nRegards,\nFundoo Notes Team");
     }
 
     @Override
@@ -141,27 +169,14 @@ public class EmailServiceImpl implements EmailService {
                 + "  </div>"
                 + "</div>";
 
-        try {
-            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
-            org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
-            helper.setFrom(fromEmail);
-            helper.setTo(toEmail);
-            helper.setSubject("Reminder: " + title);
-            helper.setText(htmlContent, true);
-            mailSender.send(mimeMessage);
-            log.info("Reminder email sent to {}", toEmail);
-        } catch (Exception e) {
-            log.warn("Failed to send HTML reminder email to {}: {}. Retrying with plain text.", toEmail, e.getMessage());
-            try {
-                sendEmail(toEmail,
-                        "Reminder: " + title,
-                        "Hello,\n\nThis is a reminder for your note:\n\n\"" + title + "\"\n"
-                                + (contentText.isEmpty() ? "" : "\nContent:\n" + contentText + "\n")
-                                + "\nPlease check your Fundoo Notes.\n\nRegards,\nFundoo Notes Team");
-            } catch (Exception ex) {
-                log.error("Failed to send reminder email to {}: {}", toEmail, ex.getMessage(), ex);
-            }
+        if (sendViaBrevoHttpApi(toEmail, "Reminder: " + title, htmlContent)) {
+            return;
         }
+
+        sendSmtpFallback(toEmail, "Reminder: " + title, htmlContent,
+                "Hello,\n\nThis is a reminder for your note:\n\n\"" + title + "\"\n"
+                        + (contentText.isEmpty() ? "" : "\nContent:\n" + contentText + "\n")
+                        + "\nPlease check your Fundoo Notes.\n\nRegards,\nFundoo Notes Team");
     }
 
     @Override
@@ -185,35 +200,41 @@ public class EmailServiceImpl implements EmailService {
                 + "  </div>"
                 + "</div>";
 
+        if (sendViaBrevoHttpApi(toEmail, "Note shared with you - Fundoo Notes", htmlContent)) {
+            return;
+        }
+
+        sendSmtpFallback(toEmail, "Note shared with you - Fundoo Notes", htmlContent,
+                ownerEmail + " shared a note with you: \"" + title + "\"\n\nOpen note here:\n" + dashboardUrl);
+    }
+
+    private void sendSmtpFallback(String toEmail, String subject, String htmlContent, String plainTextBody) {
+        if (mailSender == null) {
+            log.error("JavaMailSender is null and Brevo HTTP API failed. Email to {} could not be sent.", toEmail);
+            return;
+        }
         try {
             jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
             org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
             helper.setFrom(fromEmail);
             helper.setTo(toEmail);
-            helper.setSubject("Note shared with you - Fundoo Notes");
+            helper.setSubject(subject);
             helper.setText(htmlContent, true);
             mailSender.send(mimeMessage);
-            log.info("Collaboration email sent to {}", toEmail);
+            log.info("SMTP email sent to {}", toEmail);
         } catch (Exception e) {
-            log.warn("Failed to send HTML collaboration email to {}: {}. Retrying with plain text.", toEmail, e.getMessage());
+            log.error("[SMTP MAIL ERROR] HTML email failed to {}. FROM={} Cause: {}", toEmail, fromEmail, e.getMessage(), e);
             try {
-                sendEmail(toEmail,
-                        "Note shared with you - Fundoo Notes",
-                        ownerEmail + " shared a note with you: \"" + title + "\"\n\nOpen note here:\n" + dashboardUrl);
+                SimpleMailMessage message = new SimpleMailMessage();
+                message.setFrom(fromEmail);
+                message.setTo(toEmail);
+                message.setSubject(subject);
+                message.setText(plainTextBody);
+                mailSender.send(message);
+                log.info("SMTP plain text email sent to {}", toEmail);
             } catch (Exception ex) {
-                log.error("Failed to send collaboration email to {}: {}", toEmail, ex.getMessage(), ex);
+                log.error("[SMTP MAIL ERROR] Plain-text email failed to {}: {}", toEmail, ex.getMessage(), ex);
             }
         }
-    }
-
-    private void sendEmail(String to,
-                           String subject,
-                           String body) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromEmail);
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(body);
-        mailSender.send(message);
     }
 }

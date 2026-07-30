@@ -50,17 +50,14 @@ spring:
     connection-timeout: 60000
     listener:
       simple:
-        # Render Free Tier blocks outbound TCP on port 5671 (AMQPS).
-        # Disabling the listener prevents the "Network is unreachable" error loop.
-        # Reminders are sent directly via email (ReminderScheduler has fallback).
         auto-startup: false
 
-  # ---------- MAIL (Brevo SMTP relay) ----------
+  # ---------- MAIL (Brevo SMTP fallback) ----------
   mail:
     host: ${MAIL_HOST:smtp-relay.brevo.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${MAIL_USERNAME:radhikasharma790670@gmail.com}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -94,9 +91,8 @@ app:
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
   backend-url: ${BACKEND_URL:http://localhost:8086}
   mail:
-    # FROM address shown in the email. Must be a verified sender in Brevo.
-    # Set MAIL_FROM on Render to your verified sender email (e.g. radhikasharma790670@gmail.com)
-    from: ${MAIL_FROM:${MAIL_USERNAME:b3cabb001@smtp-brevo.com}}
+    from: ${MAIL_FROM:${MAIL_USERNAME:radhikasharma790670@gmail.com}}
+    api-key: ${BREVO_API_KEY:${MAIL_PASSWORD:}}
   oauth2:
     redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:5173/oauth/callback}
 
