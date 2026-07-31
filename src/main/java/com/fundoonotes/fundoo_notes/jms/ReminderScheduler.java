@@ -30,9 +30,12 @@ public class ReminderScheduler {
     @Scheduled(fixedRate = 10000)
     @Transactional
     public void checkReminders() {
+        // Use Asia/Kolkata timezone because frontend sends IST local time.
+        // On Render cloud servers, system clock defaults to UTC (5.5 hours behind IST).
+        java.time.LocalDateTime now = java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Kolkata"));
 
         List<Note> dueNotes = noteRepository
-                .findByReminderBeforeAndIsTrashedFalse(LocalDateTime.now());
+                .findByReminderBeforeAndIsTrashedFalse(now);
 
         if (dueNotes.isEmpty()) {
             return;
