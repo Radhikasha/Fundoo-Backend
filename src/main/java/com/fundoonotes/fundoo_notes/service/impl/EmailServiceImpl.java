@@ -44,6 +44,9 @@ public class EmailServiceImpl implements EmailService {
         while (url.endsWith("/")) {
             url = url.substring(0, url.length() - 1);
         }
+        if (url.contains("fundoo-frontend-three") || url.contains("fundoo_frontend-three")) {
+            url = "https://fundoonotess.vercel.app";
+        }
         if (url.contains(".vercel.app") && url.contains("_")) {
             url = url.replace("_", "-");
         }
