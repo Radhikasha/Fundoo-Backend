@@ -88,13 +88,13 @@ jwt:
 
 # ---------- APP-SPECIFIC ----------
 app:
-  frontend-url: ${FRONTEND_URL:http://localhost:4200}
+  frontend-url: ${FRONTEND_URL:https://fundoonotess.vercel.app}
   backend-url: ${BACKEND_URL:http://localhost:8086}
   mail:
     from: ${MAIL_FROM:${MAIL_USERNAME:radhikasharma790670@gmail.com}}
     api-key: ${BREVO_API_KEY:${MAIL_PASSWORD:}}
   oauth2:
-    redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:5173/oauth/callback}
+    redirect-uri: ${OAUTH2_REDIRECT_URI:https://fundoonotess.vercel.app/oauth/callback}
 
 # ---------- SWAGGER / OPENAPI ----------
 springdoc:

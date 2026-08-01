@@ -32,17 +32,20 @@ public class EmailServiceImpl implements EmailService {
     @Value("${app.mail.api-key:${BREVO_API_KEY:${MAIL_PASSWORD:}}}")
     private String brevoApiKey;
 
-    @Value("${app.frontend-url:http://localhost:4200}")
+    @Value("${app.frontend-url:https://fundoonotess.vercel.app}")
     private String frontendUrl;
 
     @Value("${app.backend-url:http://localhost:8086}")
     private String backendUrl;
 
     private String getCleanFrontendUrl() {
-        if (frontendUrl == null || frontendUrl.isBlank()) return "http://localhost:4200";
+        if (frontendUrl == null || frontendUrl.isBlank()) return "https://fundoonotess.vercel.app";
         String url = frontendUrl.trim();
         while (url.endsWith("/")) {
             url = url.substring(0, url.length() - 1);
+        }
+        if (url.contains(".vercel.app") && url.contains("_")) {
+            url = url.replace("_", "-");
         }
         return url;
     }
